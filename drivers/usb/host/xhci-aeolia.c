@@ -20,7 +20,7 @@ static const char hcd_name[] = "xhci_aeolia";
 
 static struct hc_driver __read_mostly xhci_aeolia_hc_driver;
 
-#define NR_DEVICES 3
+#define NR_DEVICES 1
 
 struct aeolia_xhci {
 	int nr_irqs;
