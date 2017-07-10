@@ -3265,6 +3265,7 @@ static void sky2_reset(struct sky2_hw *hw)
 	u16 status;
 	int i;
 	u32 hwe_mask = Y2_HWE_ALL_MASK;
+	u32 val1, val2;
 
 #ifdef CONFIG_X86_PS4
 	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
@@ -5106,7 +5107,7 @@ static int sky2_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	if (pdev->vendor == PCI_VENDOR_ID_SONY &&
 	    pdev->device == PCI_DEVICE_ID_SONY_AEOLIA_GBE) {
 		/* aeolia supports some sort of "l2 switch" */
-		/* it has normal phy at addr 1 with a possibly-active switch ot addr 2 */
+		/* it has normal phy at addr 1 with a possibly-active switch at addr 2 */
 		hw->phy_addr = 1;
 	}
 #endif

@@ -20,7 +20,9 @@ static const char hcd_name[] = "xhci_aeolia";
 
 static struct hc_driver __read_mostly xhci_aeolia_hc_driver;
 
-#define NR_DEVICES 1
+#define NR_DEVICES 3
+// this affects aeolia too, it seems (see note in xhci_aeolia_probe_one)
+#define BELIZE_HACK
 
 struct aeolia_xhci {
 	int nr_irqs;
@@ -57,6 +59,10 @@ static int xhci_aeolia_probe_one(struct pci_dev *dev, int index)
 	struct usb_hcd *hcd;
 	struct xhci_hcd *xhci;
 	int irq = (axhci->nr_irqs > 1) ? (dev->irq + index) : dev->irq;
+
+	// ok...adding this printk appears to have introduced a delay that fixed
+	// bringup of the middle host controller, so w/e for now...
+	printk("xhci_aeolia_probe_one %d\n", index);
 
 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
 	pci_set_drvdata(dev, axhci); /* usb_create_hcd clobbers this */
@@ -166,6 +172,9 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
 	}
 
 	for (idx = 0; idx < NR_DEVICES; idx++) {
+		#ifdef BELIZE_HACK
+		if (idx == 1) continue;
+		#endif
 		retval = xhci_aeolia_probe_one(dev, idx);
 		if (retval)
 			goto remove_hcds;
@@ -190,7 +199,10 @@ static void xhci_aeolia_remove(struct pci_dev *dev)
 	struct aeolia_xhci *axhci = pci_get_drvdata(dev);
 
 	for (idx = 0; idx < NR_DEVICES; idx++)
-		xhci_aeolia_remove_one(dev, idx);
+		#ifdef BELIZE_HACK
+		if (idx != 1)
+		#endif
+			xhci_aeolia_remove_one(dev, idx);
 	
 	apcie_free_irqs(dev->irq, axhci->nr_irqs);
 	kfree(axhci);
@@ -199,10 +211,8 @@ static void xhci_aeolia_remove(struct pci_dev *dev)
 
 
 static const struct pci_device_id pci_ids[] = {
-	{
-		PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_AEOLIA_XHCI),
-		PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BELIZE_XHCI),
-	},
+	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_AEOLIA_XHCI) },
+	{ PCI_DEVICE(PCI_VENDOR_ID_SONY, PCI_DEVICE_ID_SONY_BELIZE_XHCI) },
 	{ /* end: all zeroes */ }
 };
 MODULE_DEVICE_TABLE(pci, pci_ids);
@@ -216,6 +226,9 @@ static int xhci_aeolia_suspend(struct device *dev)
 	int retval;
 	
 	for (idx = 0; idx < NR_DEVICES; idx++) {
+		#ifdef BELIZE_HACK
+		if (idx == 1) continue;
+		#endif
 		xhci = hcd_to_xhci(axhci->hcd[idx]);
 		retval = xhci_suspend(xhci, device_may_wakeup(dev));
 		if (retval < 0)
@@ -239,6 +252,9 @@ static int xhci_aeolia_resume(struct device *dev)
 	int retval;
 
 	for (idx = 0; idx < NR_DEVICES; idx++) {
+		#ifdef BELIZE_HACK
+		if (idx == 1) continue;
+		#endif
 		xhci = hcd_to_xhci(axhci->hcd[idx]);
 		retval = xhci_resume(xhci, 0);
 		if (retval < 0)
